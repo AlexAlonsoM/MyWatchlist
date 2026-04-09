@@ -1,6 +1,7 @@
 # 📊 MyWatchlist
 
 Aplicación móvil desarrollada en React Native que simula una watchlist de instrumentos financieros (criptomonedas).
+Video demostrativo: https://youtu.be/wUTQImqedIE
 
 ---
 
