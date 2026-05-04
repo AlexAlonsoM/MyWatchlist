@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';  //Para cargar datos al inicio
+import { useEffect, useState } from 'react';
 import { View, Text, FlatList, StyleSheet, StatusBar, TouchableOpacity, ScrollView } from 'react-native';
 import { TarjetaCrypto } from '../Components/TarjetaCrypto';
 import { useAlmacenCripto } from '../Guardar/GuardarCripto';
@@ -7,7 +7,7 @@ import { useNavigation } from '@react-navigation/native';
 
 export default function PantallaHome() {
   //Datos y funciones del "Guardar"
-  const { listaCriptos, cargarDatos, alternarFavorito, actualizarPrecios } = useAlmacenCripto();
+  const { listaCriptos, cargarDatos, alternarFavorito, obtenerPreciosApi, errorRed } = useAlmacenCripto();
   //Objeto de navegacion actual dentro del componente (metodos como navigate() o goBack())
   const navigation = useNavigation();
   //Colores del tema
@@ -39,10 +39,14 @@ export default function PantallaHome() {
   useEffect(() => {
     cargarDatos();
 
-    //Actualizamos los precios
+    //Primera carga de precios desde la API
+    obtenerPreciosApi();
+
+    //Actualizamos los precios desde la API cada 30 segundos
+    //(CoinGecko gratuito tiene limite, 5 segundos seria demasiado)
     const intervalo = setInterval(() => {
-      actualizarPrecios();
-    }, 5000);
+      obtenerPreciosApi();
+    }, 30000);
 
     //Paramos el intervalo para que no se acumulen varios a la vez
     return () => clearInterval(intervalo);
@@ -51,6 +55,13 @@ export default function PantallaHome() {
   return (
     <View style={[estilos.contenedor, { backgroundColor: colores.fondo }]}>
       <StatusBar barStyle={modoOscuro ? 'light-content' : 'dark-content'} backgroundColor={colores.fondo} />
+
+      {/*Mensaje de error si no hay internet*/}
+      {errorRed.length > 0 && (
+        <View style={estilos.bannerError}>
+          <Text style={estilos.textoError}>⚠️ {errorRed}</Text>
+        </View>
+      )}
 
       {/*Botonos para ordenar*/}
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 10 }}>
@@ -76,10 +87,11 @@ export default function PantallaHome() {
         </TouchableOpacity>
       </ScrollView>
 
-      {/*Si la lista esta vacia, mostramos un mensaje de carga (Por si carga la vista antes que los datos-Api de internet no funciona)*/}
+      {/*Si la lista esta vacia, mostramos un mensaje de carga*/}
       {listaCriptos.length == 0 ? (
         <Text style={{ color: colores.texto, textAlign: 'center', marginTop: 50 }}>Cargando datos...</Text>
       ) : (
+        //Componente para renderizar listas largas
         <FlatList
           data={listaParaMostrar} //Array de objetos que vamos a mostar (Ordenado)
           keyExtractor={(item) => item.id}
@@ -110,6 +122,18 @@ const estilos = StyleSheet.create({
   contenedor: {
     flex: 1,
     padding: 16,
+  },
+  bannerError: {
+    backgroundColor: '#7f1d1d',
+    padding: 10,
+    borderRadius: 8,
+    marginBottom: 10,
+    alignItems: 'center',
+  },
+  textoError: {
+    color: 'white',
+    fontWeight: 'bold',
+    fontSize: 13,
   },
   botonOrden: {
     paddingVertical: 8,

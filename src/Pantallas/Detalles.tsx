@@ -1,4 +1,5 @@
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { LineChart } from 'react-native-gifted-charts';     //Grafico
 import { useRoute, useNavigation } from '@react-navigation/native';
 import { useAlmacenCripto } from '../Guardar/GuardarCripto';
@@ -7,15 +8,39 @@ import { useAlmacenTema } from '../Guardar/GuardarTema';
 export default function PantallaDetalles() {
   const route = useRoute();
   const navigation = useNavigation();
-  const { alternarFavorito, listaCriptos, eliminarDeWatchlist } = useAlmacenCripto();
+  const { alternarFavorito, listaCriptos, eliminarDeWatchlist, obtenerHistorialApi } = useAlmacenCripto();
   //Colores del tema
   const { colores } = useAlmacenTema();
+
+  //Historial de precios para el grafico (empieza vacio mientras carga)
+  const [datosGrafico, setDatosGrafico] = useState<{ value: number }[]>([]);
+  const [cargandoGrafico, setCargandoGrafico] = useState(true);
 
   //Recibimos la cripto de Home ('?' evita error)
   const criptoRecibida = (route.params as any)?.cripto;
 
-  //Buscamos cripto y tener sus datos
+  //Buscamos cripto y tener sus datos actualizados
   const cripto = listaCriptos.find((c) => c.id == criptoRecibida?.id);
+
+  //Al abrir la pantalla pedimos el historial real a la API
+  useEffect(() => {
+    if (!cripto) return;
+
+    const cargarHistorial = async () => {
+      setCargandoGrafico(true);
+      const precios = await obtenerHistorialApi(cripto.idApi);
+
+      if (precios.length > 0) {
+        //Convertimos los precios al formato que pide el grafico: { value: numero }
+        const formatoGrafico = precios.map((precio) => ({ value: Number(precio.toFixed(2)) }));
+        setDatosGrafico(formatoGrafico);
+      }
+
+      setCargandoGrafico(false);
+    };
+
+    cargarHistorial();
+  }, []);
 
   if (!cripto) {
     return (
@@ -23,22 +48,6 @@ export default function PantallaDetalles() {
         <Text style={{ color: colores.texto }}>No se encontro la cripto</Text>
       </View>
     );
-  }
-
-  //Generamos 10 precios simulados para el grafico
-  const datosGrafico = [];
-  for (let i = 0; i < 10; i++) {
-    const vela = Math.floor(Math.random() * 2) + 1;
-    const porcentaje = (Math.random() * 4);
-    let precioPunto = 0;
-
-    if (vela == 1) {
-      precioPunto = cripto.precio * (1 + porcentaje / 100);
-    } else {
-      precioPunto = cripto.precio * (1 - porcentaje / 100);
-    }
-
-    datosGrafico.push({ value: Number(precioPunto.toFixed(2)) });
   }
 
   const colorCambio = cripto.cambioPorcentaje >= 0 ? '#00c853' : '#ff1744';
@@ -49,31 +58,38 @@ export default function PantallaDetalles() {
 
       {/*Nombre y simbolo*/}
       <Text style={[estilos.titulo, { color: colores.texto }]}>{cripto.nombre}</Text>
-      <Text style={[estilos.simbolo, { color: colores.textoSecundario }]}>{cripto.simbolo}</Text>
+      <Text style={[estilos.simbolo, { color: colores.textoSecundario }]}>{cripto.simbolo}/USD</Text>
 
       {/*Precio y %*/}
       <Text style={estilos.precio}>${cripto.precio}</Text>
       <Text style={[estilos.cambio, { color: colorCambio }]}>
-        {signo}{cripto.cambioPorcentaje}%
+        {signo}{cripto.cambioPorcentaje}% (24h)
       </Text>
 
-      {/*Grafico*/}
+      {/*Grafico: muestra spinner mientras carga, luego el grafico real*/}
       <View style={estilos.graficoContainer}>
-        <LineChart
-          data={datosGrafico}   //Porcentaje de subida y bajada
-          width={300}
-          height={180}
-          color="#38bdf8"
-          thickness={2} // GROSOR linea del grafico.
-          hideDataPoints={false}
-          dataPointsColor="#38bdf8"
-          backgroundColor="#1e293b"
-          xAxisColor="#334155"
-          yAxisColor="#334155"
-          yAxisTextStyle={{ color: '#94a3b8', fontSize: 10 }}
-          hideRules={false} //Cuadricula (Mostrar lineas estetico)
-          rulesColor="#334155"
-        />
+        {cargandoGrafico ? (
+          <ActivityIndicator size="large" color="#38bdf8" style={{ height: 180 }} />
+        ) : datosGrafico.length > 0 ? (
+          <LineChart
+            data={datosGrafico}   //Historial real de 7 dias
+            width={300}
+            height={180}
+            color="#38bdf8"
+            thickness={2}
+            hideDataPoints={true}
+            backgroundColor="#1e293b"
+            xAxisColor="#334155"
+            yAxisColor="#334155"
+            yAxisTextStyle={{ color: '#94a3b8', fontSize: 10 }}
+            hideRules={false}
+            rulesColor="#334155"
+          />
+        ) : (
+          <Text style={{ color: '#94a3b8', textAlign: 'center', marginTop: 70 }}>
+            No se pudo cargar el gráfico
+          </Text>
+        )}
       </View>
 
       {/*Boton favorito*/}
@@ -111,7 +127,7 @@ const estilos = StyleSheet.create({
   simbolo: { fontSize: 16, marginBottom: 12 },
   precio: { fontSize: 36, fontWeight: 'bold', color: '#38bdf8', marginBottom: 4 },
   cambio: { fontSize: 18, fontWeight: 'bold', marginBottom: 20 },
-  graficoContainer: { backgroundColor: '#1e293b', padding: 10, borderRadius: 12, marginBottom: 30 },
+  graficoContainer: { backgroundColor: '#1e293b', padding: 10, borderRadius: 12, marginBottom: 30, width: 320, alignItems: 'center' },
   botonFav: {
     padding: 14,
     borderRadius: 8,

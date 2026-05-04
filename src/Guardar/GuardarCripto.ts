@@ -9,42 +9,45 @@ type Cripto = {
   precio: number;
   esFavorito: boolean;
   cambioPorcentaje: number;
+  idApi: string; //ID que usa CoinGecko para buscar esta cripto
 };
 
 //Datos de "Alamacen"
 type AlmacenCripto = {
   listaCriptos: Cripto[];
-  todasLasCriptos: Cripto[]; // Lista maestra con TODAS las criptos posibles
+  todasLasCriptos: Cripto[]; //Lista maestra con TODAS las criptos posibles
+  errorRed: string; //Mensaje de error si no hay internet
   cargarDatos: () => Promise<void>;
   guardarDatos: () => Promise<void>;
   alternarFavorito: (id: string) => void;
-  actualizarPrecios: () => void;
+  obtenerPreciosApi: () => Promise<void>;
+  obtenerHistorialApi: (idApi: string) => Promise<number[]>; //Para el grafico de Detalles
   agregarCripto: (nuevaCripto: any) => void;
   eliminarDeWatchlist: (id: string) => void;
 };
 
 //TODAS las criptos
 const todasLasCriptos: Cripto[] = [
-  {id: '1',  simbolo: 'BTC',  nombre: 'Bitcoin',   precio: 64200, esFavorito: false, cambioPorcentaje: 0},
-  {id: '2',  simbolo: 'ETH',  nombre: 'Ethereum',  precio: 3450,  esFavorito: false, cambioPorcentaje: 0},
-  {id: '3',  simbolo: 'SOL',  nombre: 'Solana',    precio: 145,   esFavorito: false, cambioPorcentaje: 0},
-  {id: '4',  simbolo: 'ADA',  nombre: 'Cardano',   precio: 0.45,  esFavorito: false, cambioPorcentaje: 0},
-  {id: '5',  simbolo: 'BNB',  nombre: 'BNB',       precio: 390,   esFavorito: false, cambioPorcentaje: 0},
-  {id: '6',  simbolo: 'XRP',  nombre: 'Ripple',    precio: 0.52,  esFavorito: false, cambioPorcentaje: 0},
-  {id: '7',  simbolo: 'DOT',  nombre: 'Polkadot',  precio: 7.8,   esFavorito: false, cambioPorcentaje: 0},
-  {id: '8',  simbolo: 'DOGE', nombre: 'Dogecoin',  precio: 0.12,  esFavorito: false, cambioPorcentaje: 0},
-  {id: '9',  simbolo: 'LTC',  nombre: 'Litecoin',  precio: 85.00, esFavorito: false, cambioPorcentaje: 0},
-  {id: '10', simbolo: 'TRX',  nombre: 'Tron',      precio: 0.11,  esFavorito: false, cambioPorcentaje: 0},
-  {id: '11', simbolo: 'AVAX', nombre: 'Avalanche', precio: 35.50, esFavorito: false, cambioPorcentaje: 0},
-  {id: '12', simbolo: 'LINK', nombre: 'Chainlink', precio: 14.20, esFavorito: false, cambioPorcentaje: 0},
-  {id: '13', simbolo: 'MATIC',nombre: 'Polygon',   precio: 0.85,  esFavorito: false, cambioPorcentaje: 0},
-  {id: '14', simbolo: 'UNI',  nombre: 'Uniswap',   precio: 7.50,  esFavorito: false, cambioPorcentaje: 0},
-  {id: '15', simbolo: 'ATOM', nombre: 'Cosmos',    precio: 9.20,  esFavorito: false, cambioPorcentaje: 0},
-  {id: '16', simbolo: 'NEAR', nombre: 'NEAR Protocol', precio: 5.80, esFavorito: false, cambioPorcentaje: 0},
-  {id: '17', simbolo: 'FTM',  nombre: 'Fantom',    precio: 0.48,  esFavorito: false, cambioPorcentaje: 0},
-  {id: '18', simbolo: 'ALGO', nombre: 'Algorand',  precio: 0.17,  esFavorito: false, cambioPorcentaje: 0},
-  {id: '19', simbolo: 'VET',  nombre: 'VeChain',   precio: 0.035, esFavorito: false, cambioPorcentaje: 0},
-  {id: '20', simbolo: 'ICP',  nombre: 'Internet Computer', precio: 11.20, esFavorito: false, cambioPorcentaje: 0},
+  {id: '1',  simbolo: 'BTC',  nombre: 'Bitcoin',   precio: 0, esFavorito: false, cambioPorcentaje: 0, idApi: 'bitcoin'},
+  {id: '2',  simbolo: 'ETH',  nombre: 'Ethereum',  precio: 0, esFavorito: false, cambioPorcentaje: 0, idApi: 'ethereum'},
+  {id: '3',  simbolo: 'SOL',  nombre: 'Solana',    precio: 0, esFavorito: false, cambioPorcentaje: 0, idApi: 'solana'},
+  {id: '4',  simbolo: 'ADA',  nombre: 'Cardano',   precio: 0, esFavorito: false, cambioPorcentaje: 0, idApi: 'cardano'},
+  {id: '5',  simbolo: 'BNB',  nombre: 'BNB',       precio: 0, esFavorito: false, cambioPorcentaje: 0, idApi: 'binancecoin'},
+  {id: '6',  simbolo: 'XRP',  nombre: 'Ripple',    precio: 0, esFavorito: false, cambioPorcentaje: 0, idApi: 'ripple'},
+  {id: '7',  simbolo: 'DOT',  nombre: 'Polkadot',  precio: 0, esFavorito: false, cambioPorcentaje: 0, idApi: 'polkadot'},
+  {id: '8',  simbolo: 'DOGE', nombre: 'Dogecoin',  precio: 0, esFavorito: false, cambioPorcentaje: 0, idApi: 'dogecoin'},
+  {id: '9',  simbolo: 'LTC',  nombre: 'Litecoin',  precio: 0, esFavorito: false, cambioPorcentaje: 0, idApi: 'litecoin'},
+  {id: '10', simbolo: 'TRX',  nombre: 'Tron',      precio: 0, esFavorito: false, cambioPorcentaje: 0, idApi: 'tron'},
+  {id: '11', simbolo: 'AVAX', nombre: 'Avalanche', precio: 0, esFavorito: false, cambioPorcentaje: 0, idApi: 'avalanche-2'},
+  {id: '12', simbolo: 'LINK', nombre: 'Chainlink', precio: 0, esFavorito: false, cambioPorcentaje: 0, idApi: 'chainlink'},
+  {id: '13', simbolo: 'MATIC',nombre: 'Polygon',   precio: 0, esFavorito: false, cambioPorcentaje: 0, idApi: 'matic-network'},
+  {id: '14', simbolo: 'UNI',  nombre: 'Uniswap',   precio: 0, esFavorito: false, cambioPorcentaje: 0, idApi: 'uniswap'},
+  {id: '15', simbolo: 'ATOM', nombre: 'Cosmos',    precio: 0, esFavorito: false, cambioPorcentaje: 0, idApi: 'cosmos'},
+  {id: '16', simbolo: 'NEAR', nombre: 'NEAR Protocol', precio: 0, esFavorito: false, cambioPorcentaje: 0, idApi: 'near'},
+  {id: '17', simbolo: 'FTM',  nombre: 'Fantom',    precio: 0, esFavorito: false, cambioPorcentaje: 0, idApi: 'fantom'},
+  {id: '18', simbolo: 'ALGO', nombre: 'Algorand',  precio: 0, esFavorito: false, cambioPorcentaje: 0, idApi: 'algorand'},
+  {id: '19', simbolo: 'VET',  nombre: 'VeChain',   precio: 0, esFavorito: false, cambioPorcentaje: 0, idApi: 'vechain'},
+  {id: '20', simbolo: 'ICP',  nombre: 'Internet Computer', precio: 0, esFavorito: false, cambioPorcentaje: 0, idApi: 'internet-computer'},
 ];
 
 //Watchlist inicial (15 primeras, demas en Search)
@@ -57,6 +60,7 @@ const datosIniciales: Cripto[] = todasLasCriptos.slice(0, 15).map((c) => ({
 export const useAlmacenCripto = create<AlmacenCripto>((set, get) => ({
   listaCriptos: datosIniciales,
   todasLasCriptos: todasLasCriptos,
+  errorRed: '', //Sin error al inicio
 
   //Datos guardados
   cargarDatos: async () => {
@@ -83,6 +87,77 @@ export const useAlmacenCripto = create<AlmacenCripto>((set, get) => ({
     }
   },
 
+  //Pide precios reales a CoinGecko y actualiza la lista
+  obtenerPreciosApi: async () => {
+    try {
+      const listaActual = get().listaCriptos;
+
+      //Juntamos todos los idApi de las criptos que tenemos en la watchlist
+      const ids = listaActual.map((c) => c.idApi).join(',');
+
+      //Llamada a la API de CoinGecko
+      //price_change_percentage_24h -> nos da el % de cambio en las ultimas 24h
+      const respuesta = await fetch(
+        `https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&ids=${ids}&price_change_percentage=24h`
+      );
+
+      //Si la respuesta no es correcta
+      if (!respuesta.ok) {
+        throw new Error('Error en la respuesta de la API');
+      }
+
+      //Convertimos la respuesta a JSON
+      const datosApi = await respuesta.json();
+
+      //Actualizamos solo precio y cambioPorcentaje de cada cripto
+      const listaNueva = listaActual.map((cripto) => {
+        //Buscamos en los datos de la API la cripto que corresponde
+        const datoApi = datosApi.find((d: any) => d.id == cripto.idApi);
+
+        if (datoApi) {
+          return {
+            ...cripto,
+            precio: datoApi.current_price,
+            cambioPorcentaje: Number(datoApi.price_change_percentage_24h?.toFixed(2) ?? 0),
+          };
+        }
+
+        //Si no encontramos el dato, dejamos la cripto igual
+        return cripto;
+      });
+
+      set({ listaCriptos: listaNueva, errorRed: '' }); //Limpiamos el error si habia uno antes
+    } catch (error) {
+      console.log("❌ Error obteniendo precios de la API:", error);
+      set({ errorRed: 'Sin conexión. No se pueden actualizar los precios.' });
+    }
+  },
+
+  //Pide el historial de precios de los ultimos 7 dias para el grafico
+  obtenerHistorialApi: async (idApi: string) => {
+    try {
+      //7 dias de historial, precio en USD
+      const respuesta = await fetch(
+        `https://api.coingecko.com/api/v3/coins/${idApi}/market_chart?vs_currency=usd&days=7`
+      );
+
+      if (!respuesta.ok) {
+        throw new Error('Error en la respuesta de la API');
+      }
+
+      const datos = await respuesta.json();
+
+      //La API devuelve: { prices: [[timestamp, precio], [timestamp, precio], ...] }
+      //Solo necesitamos los precios, no los timestamps
+      const soloPrecios: number[] = datos.prices.map((punto: number[]) => punto[1]);
+
+      return soloPrecios;
+    } catch (error) {
+      console.log("❌ Error obteniendo historial:", error);
+      return []; //Si falla devolvemos array vacio
+    }
+  },
+
   //El '...crypto' es para copiar todos los datos de la cripto iguales, luego ponemos cual es que queremos "editar"
   alternarFavorito: (id: string) => {
     const listaActual = get().listaCriptos;
@@ -105,37 +180,6 @@ export const useAlmacenCripto = create<AlmacenCripto>((set, get) => ({
     //Guardar nueva lista
     set({ listaCriptos: listaNueva });
     get().guardarDatos();
-  },
-
-  //Actualizar Precios
-  actualizarPrecios: () => {
-    const listaActual = get().listaCriptos;
-    const listaNueva: Cripto[] = [];
-
-    for (let i = 0; i < listaActual.length; i++) {
-      const cripto = listaActual[i];
-      //Cambio aleatorio
-      const vela = Math.floor(Math.random() * 2) + 1; //Para asegurarnos que no de 0 (Floor para quitar los decimales)
-      const porcentaje = (Math.random() * 4);
-      let nuevoPrecio = 0, cambioFinal = 0;
-
-      //Sumar/Restar precio
-      if (vela == 1) {
-        nuevoPrecio = cripto.precio * (1 + porcentaje / 100);
-        cambioFinal = porcentaje;
-      } else {
-        nuevoPrecio = cripto.precio * (1 - porcentaje / 100);
-        cambioFinal = -porcentaje;
-      }
-
-      listaNueva.push({
-        ...cripto,
-        precio: Number(nuevoPrecio.toFixed(2)), //Precio a texto con dos decimales
-        cambioPorcentaje: Number(cambioFinal.toFixed(2))
-      });
-    }
-
-    set({ listaCriptos: listaNueva });
   },
 
   //Añadir Cripto del Search
